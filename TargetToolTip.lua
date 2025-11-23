@@ -18,6 +18,12 @@ local CONFIG = {
     }
 }
 
+-- Default settings for realm name removal
+local DEFAULTS = {
+    hideRealmRaid = true,
+    hideRealmParty = true,
+}
+
 -- ========================================
 -- CACHE SYSTEM
 -- ========================================
@@ -294,5 +300,67 @@ cleanupFrame:SetScript("OnUpdate", function(self, elapsed)
     if self.timeSinceLastCleanup >= CONFIG.CACHE_CLEANUP_INTERVAL then
         Cache:Clean()
         self.timeSinceLastCleanup = 0
+    end
+end)
+
+-- ========================================
+-- REALM NAME REMOVAL (Party & Raid Frames)
+-- ========================================
+local realmFrame = CreateFrame("Frame")
+
+local function InitializeRealmNameRemoval()
+    -- Load settings
+    TargetToolTipDB = TargetToolTipDB or CopyTable(DEFAULTS)
+    local db = TargetToolTipDB
+    
+    -- Hide realm names on raid frames (includes party member frames shown in raid-style)
+    if db.hideRealmRaid then
+        hooksecurefunc("CompactUnitFrame_UpdateName", function(frame)
+            if frame and not frame:IsForbidden() then
+                local frameName = frame:GetName()
+                if frameName and (frameName:match("^PartyMemberFrame%d") or frameName:match("^CompactRaidFrame%d") or frameName:match("^CompactRaidGroup%dMember%d") or frameName:match("^CompactPartyFrameMember%d")) and frame.unit and frame.name then
+                    if UnitIsPlayer(frame.unit) then
+                        local unitName = GetUnitName(frame.unit, true)
+                        if unitName then
+                            frame.name:SetText(unitName:match("[^-]+"))
+                        end
+                    end
+                end
+            end
+        end)
+    end
+    
+    -- Hide realm names on party frames
+    if db.hideRealmParty then
+        if WOW_PROJECT_ID == WOW_PROJECT_MAINLINE then
+            hooksecurefunc("UnitFrame_Update", function(frame)
+                for activeFrame in PartyFrame.PartyMemberFramePool:EnumerateActive() do
+                    local unitName = GetUnitName(activeFrame.unit, true)
+                    if unitName then
+                        activeFrame.name:SetText(unitName:match("[^-]+"))
+                    end
+                end
+            end)
+        elseif WOW_PROJECT_ID == WOW_PROJECT_CLASSIC or WOW_PROJECT_ID == WOW_PROJECT_WRATH_CLASSIC then
+            hooksecurefunc("UnitFrame_Update", function(frame)
+                if frame and not frame:IsForbidden() then
+                    local frameName = frame:GetName()
+                    if frameName and frameName:match("^PartyMemberFrame%d") and frame.unit and frame.name then
+                        local unitName = GetUnitName(frame.unit, true)
+                        if unitName then
+                            frame.name:SetText(unitName:match("[^-]+"))
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end
+
+realmFrame:RegisterEvent("ADDON_LOADED")
+realmFrame:SetScript("OnEvent", function(self, event, loadedAddonName)
+    if loadedAddonName == addonName then
+        InitializeRealmNameRemoval()
+        self:UnregisterEvent("ADDON_LOADED")
     end
 end)
