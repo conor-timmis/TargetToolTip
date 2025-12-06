@@ -631,93 +631,249 @@ end
 -- OPTIONS PANEL MODULE
 -- ========================================
 local OptionsPanel = {}
+OptionsPanel.frame = nil
+
+-- UI Constants
+local PANEL_WIDTH = 420
+local PANEL_HEIGHT = 300
+local BEIGE_BG = {0.85, 0.82, 0.75, 0.95}
+local BEIGE_BORDER = {0.65, 0.60, 0.50, 1.0}
+
+-- Text Colors
+local COLOR_TITLE = {0.15, 0.10, 0.05, 1.0}
+local COLOR_VERSION = {0.35, 0.28, 0.20, 1.0}
+local COLOR_HEADER = {0.25, 0.18, 0.12, 1.0}
+local COLOR_LABEL = {1.0, 0.85, 0.0, 1.0}
+local COLOR_HINT = {0.45, 0.35, 0.25, 1.0}
+
+-- Helper function to create a checkbox
+local function CreateCheckbox(parent, label, tooltip, x, y, getFunc, setFunc)
+    local check = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
+    check:SetPoint("TOPLEFT", x, y)
+    check:SetSize(22, 22)
+    
+    local labelText = check:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    labelText:SetPoint("LEFT", check, "RIGHT", 3, 0)
+    labelText:SetText(label)
+    labelText:SetTextColor(unpack(COLOR_LABEL))
+    
+    check:SetScript("OnClick", function(self)
+        local checked = self:GetChecked()
+        if setFunc then setFunc(checked) end
+    end)
+    
+    check:SetScript("OnEnter", function(self)
+        if tooltip then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(tooltip, nil, nil, nil, nil, true)
+            GameTooltip:Show()
+        end
+    end)
+    
+    check:SetScript("OnLeave", function(self)
+        GameTooltip:Hide()
+    end)
+    
+    -- Update checkbox state
+    check.UpdateState = function()
+        local checked = getFunc and getFunc() or false
+        check:SetChecked(checked)
+    end
+    
+    check.UpdateState()
+    return check
+end
+
+-- Helper function to create a section header
+local function CreateSectionHeader(parent, text, x, y)
+    local header = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    header:SetPoint("TOPLEFT", x, y)
+    header:SetTextColor(unpack(COLOR_HEADER))
+    header:SetText(text)
+    return header
+end
+
+function OptionsPanel.CreatePanel()
+    if OptionsPanel.frame then return end
+    
+    -- Create main frame with backdrop template
+    local frame = CreateFrame("Frame", "TargetToolTipOptionsPanel", UIParent, "BackdropTemplate")
+    frame:SetSize(PANEL_WIDTH, PANEL_HEIGHT)
+    frame:SetFrameStrata("FULLSCREEN_DIALOG")
+    frame:SetClampedToScreen(true)
+    frame:SetClampRectInsets(500, -500, -300, 300)
+    frame:EnableMouse(true)
+    frame:SetMovable(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:Hide()
+    
+    -- Make it a system frame (ESC closes it)
+    table.insert(UISpecialFrames, "TargetToolTipOptionsPanel")
+    
+    -- Border with backdrop
+    frame:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = false,
+        tileSize = 16,
+        edgeSize = 12,
+        insets = { left = 4, right = 4, top = 4, bottom = 4 }
+    })
+    frame:SetBackdropColor(unpack(BEIGE_BG))
+    frame:SetBackdropBorderColor(unpack(BEIGE_BORDER))
+    
+    -- Drag handling
+    frame:SetScript("OnDragStart", frame.StartMoving)
+    frame:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        self:SetUserPlaced(false)
+    end)
+    
+    -- Title
+    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOPLEFT", 12, -10)
+    title:SetText("TargetToolTip")
+    title:SetTextColor(unpack(COLOR_TITLE))
+    
+    -- Version
+    local version = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    version:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
+    version:SetText("Version 1.3.1")
+    version:SetTextColor(unpack(COLOR_VERSION))
+    
+    -- Close button
+    local closeBtn = CreateFrame("Button", nil, frame)
+    closeBtn:SetSize(26, 26)
+    closeBtn:SetPoint("TOPRIGHT", -4, -4)
+    closeBtn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+    closeBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight")
+    closeBtn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
+    closeBtn:SetScript("OnClick", function() frame:Hide() end)
+    
+    -- Content area
+    local content = CreateFrame("Frame", nil, frame)
+    content:SetPoint("TOPLEFT", 12, -45)
+    content:SetPoint("BOTTOMRIGHT", -12, 40)
+    
+    -- Tooltip Features Section
+    local yOffset = -5
+    CreateSectionHeader(content, "Tooltip Features", 8, yOffset)
+    yOffset = yOffset - 18
+    
+    local enableTooltips = CreateCheckbox(content, "Show targeting info in tooltips", 
+        "Display who is targeting what in unit tooltips", 16, yOffset,
+        function() return SettingsManager:Get("enableTooltips") end,
+        function(val) SettingsManager:Set("enableTooltips", val) end
+    )
+    yOffset = yOffset - 22
+    
+    -- Character Features Section
+    yOffset = yOffset - 8
+    CreateSectionHeader(content, "Character Features", 8, yOffset)
+    yOffset = yOffset - 18
+    
+    local itemLevelDecimals = CreateCheckbox(content, "Show item level decimals", 
+        "Display item level with decimal precision in character frame", 16, yOffset,
+        function() return SettingsManager:Get("showItemLevelDecimals") end,
+        function(val) SettingsManager:Set("showItemLevelDecimals", val) end
+    )
+    yOffset = yOffset - 22
+    
+    -- UI Features Section
+    yOffset = yOffset - 8
+    CreateSectionHeader(content, "UI Features", 8, yOffset)
+    yOffset = yOffset - 18
+    
+    local cursorHighlight = CreateCheckbox(content, "Show green cursor highlight", 
+        "Display a green square at your cursor position", 16, yOffset,
+        function() return SettingsManager:Get("showCursorHighlight") end,
+        function(val) 
+            SettingsManager:Set("showCursorHighlight", val)
+            if val then
+                CursorHighlight.StartTracking()
+            else
+                CursorHighlight.StopTracking()
+            end
+        end
+    )
+    yOffset = yOffset - 22
+    
+    -- Realm Name Removal Section
+    yOffset = yOffset - 8
+    CreateSectionHeader(content, "Realm Name Removal", 8, yOffset)
+    yOffset = yOffset - 18
+    
+    local hideRealmRaid = CreateCheckbox(content, "Hide realm names in raid frames", 
+        "Remove realm names from raid unit frames", 16, yOffset,
+        function() return SettingsManager:Get("hideRealmRaid") end,
+        function(val) SettingsManager:Set("hideRealmRaid", val) end
+    )
+    yOffset = yOffset - 22
+    
+    local hideRealmParty = CreateCheckbox(content, "Hide realm names in party frames", 
+        "Remove realm names from party unit frames", 16, yOffset,
+        function() return SettingsManager:Get("hideRealmParty") end,
+        function(val) SettingsManager:Set("hideRealmParty", val) end
+    )
+    
+    -- Reload button
+    local reloadBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+    reloadBtn:SetSize(90, 26)
+    reloadBtn:SetPoint("BOTTOMRIGHT", -12, 8)
+    reloadBtn:SetText("Reload UI")
+    reloadBtn:SetScript("OnClick", ReloadUI)
+    
+    local reloadText = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    reloadText:SetPoint("RIGHT", reloadBtn, "LEFT", -8, 0)
+    reloadText:SetText("Please /reload to apply ANY changes")
+    reloadText:SetTextColor(unpack(COLOR_HINT))
+    
+    -- Store checkboxes for updates
+    frame.checkboxes = {
+        enableTooltips = enableTooltips,
+        itemLevelDecimals = itemLevelDecimals,
+        cursorHighlight = cursorHighlight,
+        hideRealmRaid = hideRealmRaid,
+        hideRealmParty = hideRealmParty
+    }
+    
+    -- Update function
+    frame.UpdateCheckboxes = function()
+        for _, checkbox in pairs(frame.checkboxes) do
+            if checkbox.UpdateState then
+                checkbox:UpdateState()
+            end
+        end
+    end
+    
+    -- Center on screen when shown
+    frame:SetScript("OnShow", function(self)
+        self:ClearAllPoints()
+        self:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        self:UpdateCheckboxes()
+    end)
+    
+    OptionsPanel.frame = frame
+end
+
+function OptionsPanel.Show()
+    OptionsPanel.CreatePanel()
+    if OptionsPanel.frame then
+        OptionsPanel.frame:Show()
+    end
+end
 
 function OptionsPanel.Initialize()
-    local category, layout
-    local categoryName = "TargetToolTip"
-    
-    -- Create the layout using the War Within Settings API
-    if Settings and Settings.RegisterVerticalLayoutCategory then
-        local success, err = pcall(function()
-            category, layout = Settings.RegisterVerticalLayoutCategory(categoryName)
-            
-            -- Tooltip Features Section
-            layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Tooltip Features"))
-            do
-                local variable = Settings.RegisterAddOnSetting(category, "TargetToolTip_EnableTooltips", "enableTooltips", TargetToolTip, Settings.VarType.Boolean, "Show targeting info in tooltips", true)
-                Settings.CreateCheckbox(category, variable, "Show targeting info in tooltips")
-            end
-            
-            -- Character Features Section  
-            layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Character Features"))
-            do
-                local variable = Settings.RegisterAddOnSetting(category, "TargetToolTip_ItemLevelDecimals", "showItemLevelDecimals", TargetToolTip, Settings.VarType.Boolean, "Show item level decimals", true)
-                Settings.CreateCheckbox(category, variable, "Show item level decimals")
-            end
-            
-            -- UI Features Section
-            layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("UI Features"))
-            do
-                local variable = Settings.RegisterAddOnSetting(category, "TargetToolTip_ShowCursorHighlight", "showCursorHighlight", TargetToolTip, Settings.VarType.Boolean, "Show green cursor highlight", false)
-                Settings.CreateCheckbox(category, variable, "Show green cursor highlight")
-            end
-            
-            -- Realm Name Removal Section
-            layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Realm Name Removal"))
-            do
-                local variable1 = Settings.RegisterAddOnSetting(category, "TargetToolTip_HideRealmRaid", "hideRealmRaid", TargetToolTip, Settings.VarType.Boolean, "Hide realm names in raid frames", true)
-                Settings.CreateCheckbox(category, variable1, "Hide realm names in raid frames")
-                
-                local variable2 = Settings.RegisterAddOnSetting(category, "TargetToolTip_HideRealmParty", "hideRealmParty", TargetToolTip, Settings.VarType.Boolean, "Hide realm names in party frames", true)
-                Settings.CreateCheckbox(category, variable2, "Hide realm names in party frames")
-            end
-            
-            -- Apply Changes Section
-            layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Apply Changes - Type /reload to apply settings"))
-            
-            Settings.RegisterAddOnCategory(category)
-        end)
-        
-        if success then
-            return category
-        else
-            print("TargetToolTip: Failed to register settings panel -", tostring(err))
-            return nil
-        end
-    else
-        print("TargetToolTip: Modern Settings API not available. Using saved variables only.")
-        return nil
-    end
+    -- Create panel but don't show it yet
+    OptionsPanel.CreatePanel()
+    return true
 end
 
 -- ========================================
 -- SLASH COMMANDS
 -- ========================================
-local optionsCategory
-
 local function OpenOptionsPanel()
-    if optionsCategory then
-        if Settings and Settings.OpenToCategory then
-            if optionsCategory.GetID then
-                local categoryID = optionsCategory:GetID()
-                Settings.OpenToCategory(categoryID)
-            else
-                Settings.OpenToCategory(optionsCategory)
-            end
-        elseif SettingsPanel and SettingsPanel.OpenToCategory then
-            SettingsPanel:OpenToCategory(optionsCategory)
-        elseif SettingsPanel then
-            SettingsPanel:Open()
-        else
-            print("TargetToolTip: Press ESC > Interface Options > AddOns > TargetToolTip")
-        end
-    else
-        if SettingsPanel then
-            SettingsPanel:Open()
-        else
-            print("TargetToolTip: Options panel unavailable")
-        end
-    end
+    OptionsPanel.Show()
 end
 
 SlashCmdList.TARGETTOOLTIP = OpenOptionsPanel
@@ -734,7 +890,7 @@ local function Initialize()
     ItemLevelDecimal.Initialize()
     CursorHighlight.Initialize()
     Cache:StartCleanupTimer()
-    optionsCategory = OptionsPanel.Initialize()
+    OptionsPanel.Initialize()
 end
 
 -- Register addon loaded event
