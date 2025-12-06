@@ -2,7 +2,7 @@
 ## Title: TargetToolTip
 ## Notes: Shows targeting info in tooltips, displays item level with decimals, and removes realm names from party/raid frames.
 ## Author: Conor Timmis
-## Version: 1.3
+## Version: 1.3.1
 ## IconTexture: Interface\TargetingFrame\UI-RaidTargetingIcon_1
 ## SavedVariables: TargetToolTip
 

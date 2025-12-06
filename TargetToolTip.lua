@@ -33,6 +33,7 @@ local DEFAULTS = {
     hideRealmRaid = true,
     hideRealmParty = true,
     showItemLevelDecimals = true,
+    showCursorHighlight = false,
 }
 
 -- ========================================
@@ -514,6 +515,119 @@ function ItemLevelDecimal.Initialize()
 end
 
 -- ========================================
+-- CURSOR HIGHLIGHT MODULE
+-- ========================================
+local CursorHighlight = {}
+CursorHighlight.frame = nil
+CursorHighlight.scaleTicker = nil
+
+-- Constants
+local CURSOR_SIZE = 13.25
+local CURSOR_COLOR = {0, 1, 0, 1.0} -- Solid green
+local SCALE_UPDATE_INTERVAL = 1.0 -- Update scale cache every second
+
+function CursorHighlight.CreateHighlightFrame()
+    if CursorHighlight.frame then return end
+    
+    -- Use TOOLTIP
+    local frame = CreateFrame("Frame", "TargetToolTipCursorHighlight", UIParent)
+    frame:SetFrameStrata("TOOLTIP")
+    frame:SetFrameLevel(100) -- Much lower level, still visible but safer
+    frame:SetWidth(CURSOR_SIZE)
+    frame:SetHeight(CURSOR_SIZE)
+    frame:SetMovable(false)
+    frame:EnableMouse(false)
+    frame:Hide()
+    
+    -- Create solid filled square
+    local fill = frame:CreateTexture(nil, "ARTWORK")
+    fill:SetColorTexture(unpack(CURSOR_COLOR))
+    fill:SetAllPoints(frame)
+    
+    -- Cache scale and track last position to avoid unnecessary updates
+    frame.cachedScale = UIParent:GetEffectiveScale()
+    frame.lastX = 0
+    frame.lastY = 0
+    
+    CursorHighlight.frame = frame
+end
+
+function CursorHighlight.StopTracking()
+    local frame = CursorHighlight.frame
+    if not frame then return end
+    
+    frame:Hide()
+    frame:SetScript("OnUpdate", nil)
+    
+    -- Clean up scale ticker
+    if CursorHighlight.scaleTicker then
+        CursorHighlight.scaleTicker:Cancel()
+        CursorHighlight.scaleTicker = nil
+    end
+end
+
+function CursorHighlight.StartTracking()
+    if not SettingsManager:Get("showCursorHighlight") then
+        CursorHighlight.StopTracking()
+        return
+    end
+    
+    CursorHighlight.CreateHighlightFrame()
+    local frame = CursorHighlight.frame
+    
+    -- Cache references for performance
+    local uiParent = UIParent
+    local cachedScale = frame.cachedScale
+    
+    frame:Show()
+    
+    -- Update position only when cursor moves (performance optimization)
+    frame:SetScript("OnUpdate", function(self)
+        local x, y = GetCursorPosition()
+        
+        -- Convert to UI coordinates
+        x = x / cachedScale
+        y = y / cachedScale
+        
+        -- Only update if position changed (avoids unnecessary frame operations)
+        if x ~= self.lastX or y ~= self.lastY then
+            self.lastX = x
+            self.lastY = y
+            self:ClearAllPoints()
+            self:SetPoint("TOPLEFT", uiParent, "BOTTOMLEFT", x, y)
+        end
+    end)
+    
+    -- Periodically refresh scale cache (only if ticker doesn't exist)
+    if not CursorHighlight.scaleTicker then
+        CursorHighlight.scaleTicker = C_Timer.NewTicker(SCALE_UPDATE_INTERVAL, function()
+            if frame and frame:IsShown() then
+                local newScale = UIParent:GetEffectiveScale()
+                if newScale ~= cachedScale then
+                    cachedScale = newScale
+                    frame.cachedScale = cachedScale
+                    -- Force position update by resetting last position
+                    frame.lastX = 0
+                    frame.lastY = 0
+                end
+            else
+                -- Clean up ticker if frame is hidden
+                if CursorHighlight.scaleTicker then
+                    CursorHighlight.scaleTicker:Cancel()
+                    CursorHighlight.scaleTicker = nil
+                end
+            end
+        end)
+    end
+end
+
+function CursorHighlight.Initialize()
+    if SettingsManager:Get("showCursorHighlight") then
+        CursorHighlight.StartTracking()
+    end
+end
+
+-- ========================================
 -- OPTIONS PANEL MODULE
 -- ========================================
 local OptionsPanel = {}
@@ -539,6 +653,13 @@ function OptionsPanel.Initialize()
             do
                 local variable = Settings.RegisterAddOnSetting(category, "TargetToolTip_ItemLevelDecimals", "showItemLevelDecimals", TargetToolTip, Settings.VarType.Boolean, "Show item level decimals", true)
                 Settings.CreateCheckbox(category, variable, "Show item level decimals")
+            end
+            
+            -- UI Features Section
+            layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("UI Features"))
+            do
+                local variable = Settings.RegisterAddOnSetting(category, "TargetToolTip_ShowCursorHighlight", "showCursorHighlight", TargetToolTip, Settings.VarType.Boolean, "Show green cursor highlight", false)
+                Settings.CreateCheckbox(category, variable, "Show green cursor highlight")
             end
             
             -- Realm Name Removal Section
@@ -611,6 +732,7 @@ local function Initialize()
     TooltipHandler.Initialize()
     RealmNameRemoval.Initialize()
     ItemLevelDecimal.Initialize()
+    CursorHighlight.Initialize()
     Cache:StartCleanupTimer()
     optionsCategory = OptionsPanel.Initialize()
 end

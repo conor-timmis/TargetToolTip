@@ -43,9 +43,14 @@ Changes require a UI reload (`/reload`) to take effect.
 
 ## Version
 
-1.3
+1.3.1
 
 ## Changelog
+
+### 1.3.1 (Current)
+
+- Added Cursor Highlight (Green Square)
+- Added Toggle into UI
 
 ### 1.3.0 (23.11.2025)
 
