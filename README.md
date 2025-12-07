@@ -1,6 +1,6 @@
-# TargetToolTip
+# UIEssentials
 
-A World of Warcraft addon that enhances unit tooltips with targeting information. Initially built over one week as a learning project to understand how addons work. After years of playing WoW, I figured "why not" create my own. Learning Lua while building something for a game I play so much made the process much more engaging. I've also aimed to keep it lightweight and performant as far as I could understand at this point in time.
+A World of Warcraft addon that provides essential UI enhancements to improve your gameplay experience. Initially built over one week as a learning project to understand how addons work. After years of playing WoW, I figured "why not" create my own. Learning Lua while building something for a game I play so much made the process much more engaging. I've also aimed to keep it lightweight and performant as far as I could understand at this point in time.
 
 ## Features
 
@@ -16,10 +16,20 @@ A World of Warcraft addon that enhances unit tooltips with targeting information
 - Automatically removes realm names from raid frames
 - Keeps your UI clean when playing with cross-realm players, without removing realm on tooltips.
 
+### Character Features
+
+- Displays item level with decimal precision in the character frame
+- Provides more accurate item level information for min-maxing
+
+### UI Features
+
+- Optional green cursor highlight to help track your cursor position
+- Useful for gameplay recording or accessibility
+
 ## Installation
 
 1. Download or clone this repository
-2. Place the `TargetToolTip` folder in your `World of Warcraft\_retail_\Interface\AddOns\` directory
+2. Place the `UIEssentials` folder in your `World of Warcraft\_retail_\Interface\AddOns\` directory
 3. Restart WoW or reload UI (`/reload`)
 
 ## Usage
@@ -30,24 +40,30 @@ Simply hover over any unit to see the enhanced tooltip with targeting informatio
 
 Access the options panel to toggle features on/off:
 
-- Type `/tt` or `/targettooltip` in chat
-- Or navigate to **ESC → Interface → AddOns → TargetToolTip**
+- Type `/ue` or `/uiessentials` in chat
+- Or navigate to **ESC → Interface → AddOns → UIEssentials**
 
 Available options:
 
 - **Show targeting information in tooltips** - Display who is targeting what
-- **Remove realm names from raid frames** - Clean up raid frame names
-- **Remove realm names from party frames** - Clean up party frame names
+- **Show item level decimals** - Display item level with decimal precision
+- **Show green cursor highlight** - Display a green square at cursor position
+- **Hide realm names in raid frames** - Clean up raid frame names
+- **Hide realm names in party frames** - Clean up party frame names
 
 Changes require a UI reload (`/reload`) to take effect.
 
 ## Version
 
-1.3.1
+2.0
 
 ## Changelog
 
-### 1.3.1 (Current)
+### 2.0 (Current)
+
+- Rename Addon
+
+### 1.3.1
 
 - Added Cursor Highlight (Green Square)
 - Added Toggle into UI
@@ -60,7 +76,7 @@ Changes require a UI reload (`/reload`) to take effect.
 ### 1.2.0 (23.11.2025)
 
 - Added options panel with toggleable features
-- Added slash commands: `/tt` and `/targettooltip`
+- Added slash commands: `/ue` and `/uiessentials`
 - Features can now be enabled/disabled independently
 - Code refactored for better maintainability and organization
 - Improved module structure with clear separation of concerns

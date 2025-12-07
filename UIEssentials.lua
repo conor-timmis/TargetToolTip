@@ -1,4 +1,4 @@
--- TargetToolTip
+-- UIEssentials
 local addonName, addon = ...
 
 -- ========================================
@@ -42,25 +42,25 @@ local DEFAULTS = {
 local SettingsManager = {}
 
 function SettingsManager:Initialize()
-    TargetToolTip = TargetToolTip or {}
+    UIEssentials = UIEssentials or {}
     
     -- Merge defaults with saved settings
     for key, value in pairs(DEFAULTS) do
-        if TargetToolTip[key] == nil then
-            TargetToolTip[key] = value
+        if UIEssentials[key] == nil then
+            UIEssentials[key] = value
         end
     end
     
-    return TargetToolTip
+    return UIEssentials
 end
 
 function SettingsManager:Get(key)
-    return TargetToolTip and TargetToolTip[key]
+    return UIEssentials and UIEssentials[key]
 end
 
 function SettingsManager:Set(key, value)
-    if TargetToolTip then
-        TargetToolTip[key] = value
+    if UIEssentials then
+        UIEssentials[key] = value
     end
 end
 
@@ -530,7 +530,7 @@ function CursorHighlight.CreateHighlightFrame()
     if CursorHighlight.frame then return end
     
     -- Use TOOLTIP
-    local frame = CreateFrame("Frame", "TargetToolTipCursorHighlight", UIParent)
+    local frame = CreateFrame("Frame", "UIEssentialsCursorHighlight", UIParent)
     frame:SetFrameStrata("TOOLTIP")
     frame:SetFrameLevel(100) -- Much lower level, still visible but safer
     frame:SetWidth(CURSOR_SIZE)
@@ -697,7 +697,7 @@ function OptionsPanel.CreatePanel()
     if OptionsPanel.frame then return end
     
     -- Create main frame with backdrop template
-    local frame = CreateFrame("Frame", "TargetToolTipOptionsPanel", UIParent, "BackdropTemplate")
+    local frame = CreateFrame("Frame", "UIEssentialsOptionsPanel", UIParent, "BackdropTemplate")
     frame:SetSize(PANEL_WIDTH, PANEL_HEIGHT)
     frame:SetFrameStrata("FULLSCREEN_DIALOG")
     frame:SetClampedToScreen(true)
@@ -708,7 +708,7 @@ function OptionsPanel.CreatePanel()
     frame:Hide()
     
     -- Make it a system frame (ESC closes it)
-    table.insert(UISpecialFrames, "TargetToolTipOptionsPanel")
+    table.insert(UISpecialFrames, "UIEssentialsOptionsPanel")
     
     -- Border with backdrop
     frame:SetBackdrop({
@@ -732,7 +732,7 @@ function OptionsPanel.CreatePanel()
     -- Title
     local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOPLEFT", 12, -10)
-    title:SetText("TargetToolTip")
+    title:SetText("UIEssentials")
     title:SetTextColor(unpack(COLOR_TITLE))
     
     -- Version
@@ -815,6 +815,7 @@ function OptionsPanel.CreatePanel()
         function() return SettingsManager:Get("hideRealmParty") end,
         function(val) SettingsManager:Set("hideRealmParty", val) end
     )
+    yOffset = yOffset - 22
     
     -- Reload button
     local reloadBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
@@ -876,9 +877,9 @@ local function OpenOptionsPanel()
     OptionsPanel.Show()
 end
 
-SlashCmdList.TARGETTOOLTIP = OpenOptionsPanel
-SLASH_TARGETTOOLTIP1 = "/tt"
-SLASH_TARGETTOOLTIP2 = "/targettooltip"
+SlashCmdList.UIESSENTIALS = OpenOptionsPanel
+SLASH_UIESSENTIALS1 = "/ue"
+SLASH_UIESSENTIALS2 = "/uiessentials"
 
 -- ========================================
 -- ADDON INITIALIZATION
