@@ -55,11 +55,15 @@ Changes require a UI reload (`/reload`) to take effect.
 
 ## Version
 
-2.2
+2.3
 
 ## Changelog
 
-### 2.2 (Current)
+### 2.3
+
+- Add Get iLevel functionality, this will check on inspect & show in tooltip of player unit
+
+### 2.2
 
 - Add Star Surge Cursor trail (found in dropdown in UI)
 - Add Cutscene Skipper module, this will automatically skip every time, including not seen before cutscenes

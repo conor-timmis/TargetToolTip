@@ -1096,7 +1096,7 @@ function OptionsPanel.CreatePanel()
     -- Version
     local version = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     version:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
-    version:SetText("Version 1.3.1")
+    version:SetText("Version 2.3")
     version:SetTextColor(unpack(COLOR_VERSION))
     
     -- Close button
