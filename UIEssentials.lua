@@ -246,7 +246,6 @@ end
 -- ========================================
 local ItemLevelInspector = {}
 ItemLevelInspector.cache = {}
-ItemLevelInspector.pending = {}
 
 function ItemLevelInspector:GetItemLevel(unit)
     if not unit or not UnitExists(unit) or not UnitIsPlayer(unit) then return nil end
@@ -261,17 +260,11 @@ function ItemLevelInspector:GetItemLevel(unit)
         return cached.ilvl
     end
     
-    -- Try to get directly
+    -- Try to read inspection data if it's already loaded (don't request)
     local ilvl = Utils.GetUnitItemLevel(unit)
     if ilvl and ilvl > 0 then
         self.cache[guid] = {ilvl = ilvl, time = GetTime()}
         return ilvl
-    end
-    
-    -- Request inspection if not pending and in range
-    if not self.pending[guid] and CanInspect(unit) and CheckInteractDistance(unit, 1) then
-        NotifyInspect(unit)
-        self.pending[guid] = true
     end
     
     return nil
@@ -281,16 +274,14 @@ function ItemLevelInspector:Initialize()
     local frame = CreateFrame("Frame")
     frame:RegisterEvent("INSPECT_READY")
     frame:SetScript("OnEvent", function(self, event, guid)
-        local ilvl = Utils.GetUnitItemLevel("mouseover")
-        if ilvl and ilvl > 0 then
-            ItemLevelInspector.cache[guid] = {ilvl = ilvl, time = GetTime()}
-            Cache.data[guid] = nil -- Clear tooltip cache
-            if UnitExists("mouseover") and UnitGUID("mouseover") == guid and GameTooltip:IsShown() then
-                GameTooltip:SetUnit("mouseover") -- Refresh
+        -- Passively cache item level data when inspections happen
+        local unit = Utils.FindUnitByGUID(guid)
+        if unit then
+            local ilvl = Utils.GetUnitItemLevel(unit)
+            if ilvl and ilvl > 0 then
+                ItemLevelInspector.cache[guid] = {ilvl = ilvl, time = GetTime()}
             end
         end
-        ItemLevelInspector.pending[guid] = nil
-        ClearInspectPlayer()
     end)
 end
 
