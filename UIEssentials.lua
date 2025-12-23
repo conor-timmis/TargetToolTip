@@ -10,7 +10,6 @@ local CONSTANTS = {
     MAX_PARTY_MEMBERS = 4,
     MAX_RAID_MEMBERS = 40,
     MAX_NAMEPLATES = 40,
-    CUTSCENE_CHECK_INTERVAL = 0.05, -- Check every 0.05 seconds (20 times per second)
     
     COLORS = {
         LABEL = "|cffff6600",
@@ -675,15 +674,11 @@ function CutsceneSkipper.Enable()
     local f = CutsceneSkipper.monitorFrame
     f:RegisterEvent("CINEMATIC_START")
     f:RegisterEvent("PLAY_MOVIE")
-    f:SetScript("OnEvent", function(self, event) if event == "CINEMATIC_START" or event == "PLAY_MOVIE" then CutsceneSkipper.SkipCutscene() end end)
-    f:SetScript("OnUpdate", function(self, elapsed)
-        self.timeSinceLastCheck = (self.timeSinceLastCheck or 0) + elapsed
-        if self.timeSinceLastCheck >= CONSTANTS.CUTSCENE_CHECK_INTERVAL then
-            self.timeSinceLastCheck = 0
+    f:SetScript("OnEvent", function(self, event)
+        if event == "CINEMATIC_START" or event == "PLAY_MOVIE" then
             CutsceneSkipper.SkipCutscene()
         end
     end)
-    f.timeSinceLastCheck = 0
     if MovieFrame and not CutsceneSkipper.movieFrameHooked then
         MovieFrame:HookScript("OnShow", CutsceneSkipper.SkipCutscene)
         CutsceneSkipper.movieFrameHooked = true
@@ -704,7 +699,6 @@ function CutsceneSkipper.Disable()
     if CutsceneSkipper.monitorFrame then
         CutsceneSkipper.monitorFrame:UnregisterAllEvents()
         CutsceneSkipper.monitorFrame:SetScript("OnEvent", nil)
-        CutsceneSkipper.monitorFrame:SetScript("OnUpdate", nil)
     end
     CutsceneSkipper.isInitialized = false
 end
